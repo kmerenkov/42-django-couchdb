@@ -49,7 +49,7 @@ class DatabaseCreation(BaseDatabaseCreation):
         return fake_output, references
 
     def sql_for_inline_foreign_key_references(self, field, known_models, style):
-        pending = field.rel.to in known_models:
+        pending = field.rel.to in known_models
         return [], pending
 
     def sql_for_many_to_many_field(self, model, field, style):
