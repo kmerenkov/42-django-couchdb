@@ -4,7 +4,8 @@ import couchdb
 
 
 __all__ = ('ConnectionWrapper', 'CursorWrapper', 'DatabaseError',
-           'DebugCursorWrapper', 'IntegrityError', 'InternalError')
+           'DebugCursorWrapper', 'IntegrityError', 'InternalError',
+           'SQL')
 
 DatabaseError = couchdb.ServerError
 IntegrityError = couchdb.ResourceConflict
@@ -15,6 +16,19 @@ class InternalError(DatabaseError):
     e.g. the cursor is not valid anymore, the transaction is out of sync, etc.
     It must be a subclass of DatabaseError.
     """
+
+class SQL:
+    def __init__(self, server, command, params):
+        self.server = server
+        self.command = command
+        self.params = params
+
+    def execute_create(self):
+        return self.server.create(self.params)
+
+    def execute_sql(self, params):
+        if self.command == 'create':
+            return self.execute_create()
 
 class ConnectionWrapper(object):
     """
@@ -57,6 +71,10 @@ class CursorWrapper(object):
         self.server = server
         self._username, self._password = username, password
 
+    def execute(self, sql, params=()):
+        if isinstance(sql, SQL):
+            sql.execute_sql(params)
+
 class DebugCursorWrapper(CursorWrapper):
     """
     @summary: Special cursor class, that stores all queries to database for
@@ -70,7 +88,9 @@ class DebugCursorWrapper(CursorWrapper):
     def execute(self, sql, params=()):
         start = time()
         try:
-            pass
+            #~ import pdb
+            #~ pdb.set_trace()
+            super(DebugCursorWrapper, self).execute(sql, params)
         finally:
             stop = time()
             #~ sql = self.db.ops.last_executed_query(self.cursor, sql, params)

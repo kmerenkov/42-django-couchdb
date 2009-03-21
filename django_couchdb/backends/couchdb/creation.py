@@ -4,10 +4,6 @@ from utils import *
 
 __all__ = ('DatabaseCreation',)
 
-class SQL:
-    def __init__(self,*args,**kwargs):
-        self.args = args
-        self.kwargs = kwargs
 
 class DatabaseCreation(BaseDatabaseCreation):
     """
