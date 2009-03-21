@@ -10,4 +10,4 @@ class TestQueries:
         b.title = "First Title"
         b.slug = "first_title"
         b.save()
-        assert True
+        assert_equal(b.pk, 1)

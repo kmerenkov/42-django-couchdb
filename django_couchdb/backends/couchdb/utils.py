@@ -5,10 +5,31 @@ import couchdb
 
 __all__ = ('ConnectionWrapper', 'CursorWrapper', 'DatabaseError',
            'DebugCursorWrapper', 'IntegrityError', 'InternalError',
-           'SQL')
+           'SQL', 'Sequence')
 
 DatabaseError = couchdb.ServerError
 IntegrityError = couchdb.ResourceConflict
+
+class Sequence(object):
+    def __init__(self, server, name):
+        if not 'sequences' in server.__iter__():
+            table = server.create('sequences')
+        else:
+            table = server['sequences']
+
+        try:
+            seq = table[name]
+        except couchdb.ResourceNotFound:
+            seq = {'nextval': 1}
+        self.seq = seq
+        seq['nextval']=seq['nextval'] + 1
+        table[name] = seq
+
+    def nextval(self):
+        return self.seq['nextval']
+
+    def currval(self):
+        return self.seq['nextval'] - 1
 
 class InternalError(DatabaseError):
     """
@@ -124,4 +145,6 @@ class DebugCursorWrapper(CursorWrapper):
                 #~ 'sql': sql,
                 #~ 'time': "%.3f" % (stop - start),
             #~ })
+
+
 
