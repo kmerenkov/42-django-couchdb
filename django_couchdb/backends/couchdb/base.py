@@ -28,7 +28,23 @@ class DatabaseFeatures(BaseDatabaseFeatures):
     uses_custom_query_class = True
 
 class DatabaseWrapper(BaseDatabaseWrapper):
-    #~ operators = {}
+    operators = {
+        'exact': '= %s',
+        'iexact': '= UPPER(%s)',
+        'contains': 'LIKE %s',
+        'icontains': 'LIKE UPPER(%s)',
+        'regex': '~ %s',
+        'iregex': '~* %s',
+        'gt': '> %s',
+        'gte': '>= %s',
+        'lt': '< %s',
+        'lte': '<= %s',
+        'startswith': 'LIKE %s',
+        'endswith': 'LIKE %s',
+        'istartswith': 'LIKE UPPER(%s)',
+        'iendswith': 'LIKE UPPER(%s)',
+    }
+
     """
     @summary: Database wrapper for Django CouchDB backend.
     """
