@@ -27,6 +27,7 @@ class DatabaseFeatures(BaseDatabaseFeatures):
     update_can_self_select = False
 
 class DatabaseWrapper(BaseDatabaseWrapper):
+    #~ operators = {}
     """
     @summary: Database wrapper for Django CouchDB backend.
     """

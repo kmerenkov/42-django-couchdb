@@ -4,6 +4,11 @@ from utils import *
 
 __all__ = ('DatabaseCreation',)
 
+class SQL:
+    def __init__(self,*args,**kwargs):
+        self.args = args
+        self.kwargs = kwargs
+
 class DatabaseCreation(BaseDatabaseCreation):
     """
     @summary: Django CouchDB backend's implementation for Django's
@@ -14,6 +19,7 @@ class DatabaseCreation(BaseDatabaseCreation):
 
         opts = model._meta
         server = self.connection.cursor().server
+
 
         # Browsing through fields to find references
         for field in opts.local_fields:
@@ -46,16 +52,18 @@ class DatabaseCreation(BaseDatabaseCreation):
         # Makes fake SQL
         fake_output = [SQL(server, 'create', opts.db_table)]
 
-        return fake_output, references
+        return fake_output, pending_references
 
     def sql_for_inline_foreign_key_references(self, field, known_models, style):
         pending = field.rel.to in known_models
         return [], pending
 
     def sql_for_many_to_many_field(self, model, field, style):
+        return []
         """
         """
 
     def sql_for_pending_references(self, model, style, pending_references):
+        return []
         """
         """

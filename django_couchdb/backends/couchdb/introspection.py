@@ -9,4 +9,4 @@ class DatabaseIntrospection(BaseDatabaseIntrospection):
     BaseDatabaseIntrospection class.
     """
     def get_table_list(self, cursor):
-        return cursor.server.__iter__()
+        return list(cursor.server.__iter__())

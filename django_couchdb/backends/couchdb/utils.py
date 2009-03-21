@@ -1,3 +1,5 @@
+from time import time
+
 import couchdb
 
 
@@ -28,7 +30,8 @@ class ConnectionWrapper(object):
             self._server = None
 
     def commit(self):
-        raise NotImplementedError
+        #~ raise NotImplementedError
+        pass
 
     def cursor(self):
         if self._server is None:
@@ -63,3 +66,16 @@ class DebugCursorWrapper(CursorWrapper):
         super(DebugCursorWrapper, self).__init__(cursor.server,
                                                  cursor._username,
                                                  cursor._password)
+
+    def execute(self, sql, params=()):
+        start = time()
+        try:
+            pass
+        finally:
+            stop = time()
+            #~ sql = self.db.ops.last_executed_query(self.cursor, sql, params)
+            #~ self.db.queries.append({
+                #~ 'sql': sql,
+                #~ 'time': "%.3f" % (stop - start),
+            #~ })
+
