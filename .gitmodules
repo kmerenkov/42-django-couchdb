@@ -1,0 +1,3 @@
+[submodule "tests/tddspry"]
+	path = tests/tddspry
+	url = trac.khavr.com:/var/lib/git/tddspry

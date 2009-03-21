@@ -1,0 +1,20 @@
+# -*- makefile -*-
+# (C) KDS, 2006-2009
+##### copy this file to Makefile.def and set BASE path to you own project directory
+
+app=django_couchdb
+proj=$(app)
+ver=$(shell cat .version)
+
+BASE=/path/to/django_couchdb
+SITE=/path/to/site-packages
+PYTHONPATH=$(BASE):$(SITE)
+PYTHON=$(PYTHONPATH) python
+
+settings=djcouchtest.settings
+test_settings=djcouchtest.settings
+
+### Local variables: ***
+### compile-command:"make" ***
+### tab-width: 2 ***
+### End: ***
