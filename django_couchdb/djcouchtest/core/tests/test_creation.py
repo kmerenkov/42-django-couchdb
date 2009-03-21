@@ -8,4 +8,10 @@ class TestCreation:
         assert "core_boo" in connection.introspection.get_table_list(cursor)
         assert "core_foo" in connection.introspection.get_table_list(cursor)
         description = connection.introspection.get_table_description(cursor, 'core_boo')
-        assert description, "Description must not be None"
+        assert description, "Description for core_boo must not be None"
+        assert 'id' in description, description
+        assert 'title' in description, description
+        assert 'NOT NULL' in description['title']
+        assert 'PRIMARY KEY' in description['id']
+        description = connection.introspection.get_table_description(cursor, 'core_foo')
+        assert description, "Description for core_foo must not be None"

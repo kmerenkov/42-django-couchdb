@@ -17,18 +17,30 @@ class InternalError(DatabaseError):
     It must be a subclass of DatabaseError.
     """
 
-class SQL:
+class SQL(object):
     def __init__(self, server, command, params):
         self.server = server
         self.command = command
         self.params = params
 
     def execute_create(self):
-        return self.server.create(self.params)
+        # params --- (table_name, field_params)
+        table = self.server.create(self.params[0])
+        meta = {'_id': '_meta', 'parent_id': ''}
+        for field, field_params in self.params[1].iteritems():
+            params_list = []
+            for param, value in field_params.iteritems():
+                if value:
+                    params_list.append(param)
+            meta[field] = params_list
+        table['_meta'] = meta
 
     def execute_sql(self, params):
         if self.command == 'create':
             return self.execute_create()
+
+    def __unicode__(self):
+        return u"%s on %s with %s" % (self.command, self.server, self.params)
 
 class ConnectionWrapper(object):
     """
@@ -88,8 +100,6 @@ class DebugCursorWrapper(CursorWrapper):
     def execute(self, sql, params=()):
         start = time()
         try:
-            #~ import pdb
-            #~ pdb.set_trace()
             super(DebugCursorWrapper, self).execute(sql, params)
         finally:
             stop = time()
