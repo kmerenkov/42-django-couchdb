@@ -1,4 +1,5 @@
 from time import time
+from itertools import izip
 
 import couchdb
 
@@ -21,15 +22,15 @@ class Sequence(object):
             seq = table[name]
         except couchdb.ResourceNotFound:
             seq = {'nextval': 1}
-        self.seq = seq
+        self._nextval = seq['nextval']
         seq['nextval']=seq['nextval'] + 1
         table[name] = seq
 
-    def nextval(self):
-        return self.seq['nextval']
+    def nextval(self): # doesn't increment
+        return self._nextval
 
     def currval(self):
-        return self.seq['nextval'] - 1
+        return self._nextval - 1
 
 class InternalError(DatabaseError):
     """
@@ -70,14 +71,26 @@ class SQL(object):
         meta['REFERENCES'] = refs
         table['_meta'] = meta
 
+    def execute_insert(self, server, params):
+        # params --- (table name, columns, values)
+        table = server[self.params[0]]
+        seq = Sequence(server, ("%s_seq"% (self.params[0], )))
+        id = str(seq.nextval())
+        obj = {'_id': id}
+        for key, view, val in izip(self.params[1], self.params[2], params):
+            obj[key] = view % val
+        table[id] = obj
+
     def execute_sql(self, server, params):
         if self.command == 'create':
             return self.execute_create(server)
         elif self.command == 'add_foreign_key':
             return self.execute_add_foreign_key(server)
+        elif self.command == 'insert':
+            return self.execute_insert(server, params)
 
     def __unicode__(self):
-        return u"%s on %s with %s" % (self.command, self.server, self.params)
+        return u"command %s with params = %s" % (self.command, self.params)
 
 class ConnectionWrapper(object):
     """
