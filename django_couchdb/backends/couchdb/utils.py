@@ -18,15 +18,14 @@ class InternalError(DatabaseError):
     """
 
 class SQL(object):
-    def __init__(self, server, command, params):
-        self.server = server
+    def __init__(self, command, params):
         self.command = command
         self.params = params
 
-    def execute_create(self):
+    def execute_create(self, server):
         # params --- (table_name, field_params)
-        table = self.server.create(self.params[0])
-        meta = {'_id': '_meta', 'parent_id': ''}
+        table = server.create(self.params[0])
+        meta = {'_id': '_meta'}
         for field, field_params in self.params[1].iteritems():
             params_list = []
             for param, value in field_params.iteritems():
@@ -35,9 +34,23 @@ class SQL(object):
             meta[field] = params_list
         table['_meta'] = meta
 
-    def execute_sql(self, params):
+    def execute_add_foreign_key(self, server):
+        # params - (r_table, r_col, table)
+
+        table = server[self.params[0]]
+        meta = table['_meta']
+        try:
+            refs = meta['REFERENCES']
+        except KeyError:
+            refs = []
+        refs.append('%s=%s' % (self.params[1], self.params[2]))
+        meta['REFERENCES'] = refs
+
+    def execute_sql(self, server, params):
         if self.command == 'create':
-            return self.execute_create()
+            return self.execute_create(server)
+        elif self.command == 'add_foreign_key':
+            return self.execute_add_foreign_key(server)
 
     def __unicode__(self):
         return u"%s on %s with %s" % (self.command, self.server, self.params)
@@ -85,7 +98,7 @@ class CursorWrapper(object):
 
     def execute(self, sql, params=()):
         if isinstance(sql, SQL):
-            sql.execute_sql(params)
+            sql.execute_sql(self.server, params)
 
 class DebugCursorWrapper(CursorWrapper):
     """

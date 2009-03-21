@@ -1,4 +1,6 @@
 from django.core.management import call_command
+from nose.tools import assert_equal
+
 
 class TestCreation:
     def test_syncdb(self):
@@ -15,3 +17,5 @@ class TestCreation:
         assert 'PRIMARY KEY' in description['id']
         description = connection.introspection.get_table_description(cursor, 'core_foo')
         assert description, "Description for core_foo must not be None"
+        assert 'boo_id' in description, description
+        assert_equal(description['REFERENCES'],'boo_id=core_boo')

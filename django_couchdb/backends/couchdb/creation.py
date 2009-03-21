@@ -20,7 +20,6 @@ class DatabaseCreation(BaseDatabaseCreation):
         data, pending_references = {}, {}
 
         opts = model._meta
-        server = self.connection.cursor().server
 
 
         # Browsing through fields to find references
@@ -52,7 +51,7 @@ class DatabaseCreation(BaseDatabaseCreation):
             data.update({field.column: options})
 
         # Makes fake SQL
-        fake_output = [SQL(server, 'create', (opts.db_table, data) )]
+        fake_output = [SQL('create', (opts.db_table, data) )]
 
         return fake_output, pending_references
 
@@ -65,7 +64,17 @@ class DatabaseCreation(BaseDatabaseCreation):
         """
         """
 
+
     def sql_for_pending_references(self, model, style, pending_references):
-        return []
-        """
-        """
+        fake_output = []
+        opts = model._meta
+        if model in pending_references:
+            for rel_class, f in pending_references[model]:
+                rel_opts = rel_class._meta
+                r_table = rel_opts.db_table
+                r_col = f.column
+                table = opts.db_table
+                #~ col = opts.get_field(f.rel.field_name).column
+                fake_output.append(SQL('add_foreign_key', (r_table, r_col, table)))
+            del pending_references[model]
+        return fake_output
