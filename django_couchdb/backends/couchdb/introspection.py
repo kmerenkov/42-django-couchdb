@@ -10,3 +10,6 @@ class DatabaseIntrospection(BaseDatabaseIntrospection):
     """
     def get_table_list(self, cursor):
         return list(cursor.server.__iter__())
+
+    def get_table_description(self, cursor, table_name):
+        return cursor.server[table_name]['_meta']

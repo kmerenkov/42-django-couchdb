@@ -10,7 +10,13 @@ class DatabaseCreation(BaseDatabaseCreation):
     @summary: Django CouchDB backend's implementation for Django's
     BaseDatabaseCreation class.
     """
-    def sql_create_model(self, model, style, seen_models):
+    class DummyDataTypes:
+        def __getitem__(self, key): return "type"
+
+    data_types = DummyDataTypes()
+
+
+    def sql_create_model(self, model, style, seen_models=set()):
         data, pending_references = {}, {}
 
         opts = model._meta
@@ -36,7 +42,7 @@ class DatabaseCreation(BaseDatabaseCreation):
             if field.rel:
                 ref_fake_sql, pending = \
                     self.sql_for_inline_foreign_key_references(field,
-                                                               known_models,
+                                                               seen_models,
                                                                style)
 
                 if pending:
