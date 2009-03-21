@@ -23,9 +23,12 @@ class SQL(object):
         self.params = params
 
     def execute_create(self, server):
-        # params --- (table_name, field_params)
-        table = server.create(self.params[0])
+        # params --- (model opts, field_params)
+        opts = self.params[0]
+        table = server.create(opts.db_table)
         meta = {'_id': '_meta'}
+        if opts.unique_together:
+            meta['UNIQUE'] = list(opts.unique_together)
         for field, field_params in self.params[1].iteritems():
             params_list = []
             for param, value in field_params.iteritems():
@@ -36,7 +39,6 @@ class SQL(object):
 
     def execute_add_foreign_key(self, server):
         # params - (r_table, r_col, table)
-
         table = server[self.params[0]]
         meta = table['_meta']
         try:
@@ -45,6 +47,7 @@ class SQL(object):
             refs = []
         refs.append('%s=%s' % (self.params[1], self.params[2]))
         meta['REFERENCES'] = refs
+        table['_meta'] = meta
 
     def execute_sql(self, server, params):
         if self.command == 'create':

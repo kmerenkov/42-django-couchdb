@@ -15,7 +15,9 @@ class TestCreation:
         assert 'title' in description, description
         assert 'NOT NULL' in description['title']
         assert 'PRIMARY KEY' in description['id']
+        assert_equal(description['UNIQUE'],[[u'title', u'slug']])
         description = connection.introspection.get_table_description(cursor, 'core_foo')
         assert description, "Description for core_foo must not be None"
         assert 'boo_id' in description, description
-        assert_equal(description['REFERENCES'],'boo_id=core_boo')
+        assert_equal(description['REFERENCES'],[u'boo_id=core_boo'])
+

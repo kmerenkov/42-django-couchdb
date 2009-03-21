@@ -51,7 +51,7 @@ class DatabaseCreation(BaseDatabaseCreation):
             data.update({field.column: options})
 
         # Makes fake SQL
-        fake_output = [SQL('create', (opts.db_table, data) )]
+        fake_output = [SQL('create', (opts, data) )]
 
         return fake_output, pending_references
 
