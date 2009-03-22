@@ -24,6 +24,9 @@ class DatabaseOperations(BaseDatabaseOperations):
                 if cls.__name__ == 'InsertQuery':
                     NewInsertQuery = get_insert_query(cls)
                     obj =  super(CustomQuery, NewInsertQuery).__new__(NewInsertQuery, *args, **kwargs)
+                elif cls.__name__ == 'DeleteQuery':
+                    NewDeleteQuery = get_delete_query(cls)
+                    obj =  super(CustomQuery, NewDeleteQuery).__new__(NewDeleteQuery, *args, **kwargs)
                 else:
                     obj =  super(CustomQuery, cls).__new__(cls, *args, **kwargs)
                 return obj

@@ -39,13 +39,18 @@ class InternalError(DatabaseError):
     It must be a subclass of DatabaseError.
     """
 
+def unquote_name(name):
+    if name.startswith('"') and name.endswith('"'):
+        return name[1:-1]
+    return name
+
 class SQL(object):
     def __init__(self, command, params):
         self.command = command
         self.params = params
 
     def execute_create(self, server):
-        # params --- (model opts, field_params)
+        # self.params --- (model opts, field_params)
         opts = self.params[0]
         table = server.create(opts.db_table)
         meta = {'_id': '_meta'}
@@ -60,7 +65,7 @@ class SQL(object):
         table['_meta'] = meta
 
     def execute_add_foreign_key(self, server):
-        # params - (r_table, r_col, table)
+        # self.params - (r_table, r_col, table)
         table = server[self.params[0]]
         meta = table['_meta']
         try:
@@ -72,7 +77,7 @@ class SQL(object):
         table['_meta'] = meta
 
     def execute_insert(self, server, params):
-        # params --- (table name, columns, values)
+        # self.params --- (table name, columns, values)
         table = server[self.params[0]]
         seq = Sequence(server, ("%s_seq"% (self.params[0], )))
         id = str(seq.nextval())
@@ -81,32 +86,42 @@ class SQL(object):
             obj[key] = view % val
         table[id] = obj
 
-    def execute_select(self, server, cursor, params):
-        def unquote_name(name):
-            if name.startswith('"') and name.endswith('"'):
-                return name[1:-1]
-            return name
+    def simple_select(self,server, table, columns, where, params):
+        map_fun = "function (d) { if (d._id!=\"_meta\") {"
+        # just selecting, not where
+        map_fun += "result = ["
+        str_columns = ','.join(map(lambda x: "d._id" if unquote_name(x.split('.')[1]) == 'id' else
+                                "d."+ unquote_name(x.split('.')[1]),
+                           (x for x in columns)))
+        map_fun += str_columns;
+        map_fun += "] ;emit(d._id, result);"
+        map_fun += "}}"
+        view = table.query(map_fun)
+        return view
 
-        # params --- (distinct flag, table columns, from, where, extra where,
+    def execute_select(self, server, cursor, params):
+
+        # self.params --- (distinct flag, table columns, from, where, extra where,
         #             group by, having, ordering, limits)
 
+        table = server[unquote_name(self.params[2][0])]
         if len(self.params[1])==1 and self.params[1][0]=='COUNT(*)':
-            table = server[unquote_name(self.params[2][0])]
+
             map_fun = "function (d) { if (d._id!=\"_meta\") {emit(null,null);}}"
             cursor.save_one(len(table.query(map_fun)))
         else:
-            map_fun = "function (d) { if (d._id!=\"_meta\") {"
-            # just selecting, not where
-            map_fun += "result = ["
-            columns = ','.join(map(lambda x: "d._id" if unquote_name(x.split('.')[1]) == 'id' else
-                                    "d."+ unquote_name(x.split('.')[1]),
-                               (x for x in self.params[1])))
-            map_fun += columns;
-            map_fun += "] ;emit(d._id, result);"
-            map_fun += "}}"
-            table = server[unquote_name(self.params[2][0])]
-            view = table.query(map_fun)
-            cursor.save_view(view)
+            cursor.save_view(self.simple_select(server, table,
+                                           self.params[1], self.params[3], params))
+
+    def execute_delete(self, server, params):
+        # self.params ---(table_name, where)
+        table_name = self.params[0]
+        where = self.params[1]
+        table = server[unquote_name(table_name)]
+        view = self.simple_select(server, table, (table_name+'.'+'"id"',),
+                                  where, params)
+        for x in view:
+            del table[x.id]
 
     def execute_sql(self, cursor, params):
         server = cursor.server
@@ -118,6 +133,8 @@ class SQL(object):
             return self.execute_insert(server, params)
         elif self.command == 'select':
             return self.execute_select(server, cursor, params)
+        elif self.command == 'delete':
+            return self.execute_delete(server, params)
 
     def __unicode__(self):
         return u"command %s with params = %s" % (self.command, self.params)
@@ -195,6 +212,8 @@ class DebugCursorWrapper(CursorWrapper):
     def execute(self, sql, params=()):
         start = time()
         try:
+            print "SQL:", unicode(sql)
+            print "PARAMS:", params
             super(DebugCursorWrapper, self).execute(sql, params)
         finally:
             stop = time()
