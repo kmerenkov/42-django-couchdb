@@ -1,6 +1,7 @@
 from django.db.backends import BaseDatabaseOperations
 from utils import *
 from queries import *
+from nodes import *
 
 __all__ = ('DatabaseOperations',)
 
@@ -30,7 +31,11 @@ class DatabaseOperations(BaseDatabaseOperations):
                 else:
                     obj =  super(CustomQuery, cls).__new__(cls, *args, **kwargs)
                 return obj
-
+            def __init__(self, model, connection, where=None):
+                from django.db.models.sql.where import WhereNode
+                where = where or WhereNode
+                NewWhereNode = get_where_node(where)
+                super(CustomQuery, self).__init__(model, connection, where=NewWhereNode)
             def as_sql(self, with_limits=True, with_col_aliases=False):
                 """
                 Creates the SQL for this query. Returns the SQL string and list of

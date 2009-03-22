@@ -44,6 +44,12 @@ def unquote_name(name):
         return name[1:-1]
     return name
 
+WHERE_REPLACEMENTS = {'AND': '&&', 'OR': '||', 'NOT': '!'}
+def process_where(where):
+    for key,val in WHERE_REPLACEMENTS.iteritems():
+        where = where.replace(key, val)
+    return where
+
 class SQL(object):
     def __init__(self, command, params):
         self.command = command
@@ -88,21 +94,10 @@ class SQL(object):
 
 
     def simple_select(self,server, table, columns, where, params):
-        def create_where_statement(s, params):
-            table_name = unquote_name(s[:s.find('.')])
-            field_name = unquote_name(s[s.find('.')+1:s.find(' ')])
-            if field_name == 'id':
-                field_name = '_id'
-            statement = s[s.find(' '):]
-
-            if 'in' in statement: # hack
-                params = '{'+','.join('%s: 1' % x for x in params) + '}'
-            return ('d.'+field_name + statement) % params
 
         map_fun = "function (d) { if (d._id!=\"_meta\") {"
         if where:
-            st = create_where_statement(where, params)
-            map_fun += "if ("+st+") {"
+            map_fun += "if ("+process_where(where)+") {"
 
         # just selecting, not where
         map_fun += "result = ["
