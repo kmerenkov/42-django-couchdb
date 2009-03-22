@@ -1,7 +1,9 @@
 from django.core.management import call_command
+from django.db.models import Q
 from nose.tools import assert_equal
 
 from djcouchtest.core.models import Boo, Foo
+
 
 class TestQueries:
     def test_save_and_get(self):
@@ -36,7 +38,12 @@ class TestQueries:
         b1.save()
         b11 = Boo(title="11", slug="1")
         b11.save()
+        b2 = Boo(title="2", slug="2")
+        b2.save()
         assert_equal(Boo.objects.filter(slug="1").count(), 2)
         assert_equal(Boo.objects.filter(slug="1").filter(title="1").count(), 1)
+        assert_equal(Boo.objects.filter(Q(title="1") | Q(title="2")).count(), 2)
+
+
 
 
