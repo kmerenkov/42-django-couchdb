@@ -4,7 +4,7 @@ from nose.tools import assert_equal
 from djcouchtest.core.models import Boo, Foo
 
 class TestQueries:
-    def test_saveobject(self):
+    def test_save_and_get(self):
         call_command('syncdb', interactive=False, verbosity=0)
         Boo.objects.all().delete()
         Foo.objects.all().delete()
@@ -27,5 +27,16 @@ class TestQueries:
         f2.save()
         new_f = Foo.objects.filter(boo=b)[0]
         assert new_f.boo.title == "First Title"
+
+    def test_complicated_where(self):
+        call_command('syncdb', interactive=False, verbosity=0)
+        Boo.objects.all().delete()
+        assert_equal(Boo.objects.all().count(), 0)
+        b1 = Boo(title="1", slug="1")
+        b1.save()
+        b11 = Boo(title="11", slug="1")
+        b11.save()
+        assert_equal(Boo.objects.filter(slug="1").count(), 2)
+        assert_equal(Boo.objects.filter(slug="1").filter(title="1").count(), 1)
 
 
