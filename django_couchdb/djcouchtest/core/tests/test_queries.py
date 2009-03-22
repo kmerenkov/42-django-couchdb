@@ -12,4 +12,9 @@ class TestQueries:
         b.title = "First Title"
         b.slug = "first_title"
         b.save()
-        assert_equal(Boo.objects.all().count(), 1)
+        b2 = Boo()
+        b2.title = "Second Title"
+        b2.slug = "second_title"
+        b2.save()
+        assert_equal(Boo.objects.all().count(), 2)
+        assert_equal(Boo.objects.filter(slug="first_title").count(),1)
