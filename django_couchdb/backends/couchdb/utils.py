@@ -122,12 +122,14 @@ class SQL(object):
 
         # self.params --- (distinct flag, table columns, from, where, extra where,
         #             group by, having, ordering, limits)
-
-        table = server[unquote_name(self.params[2][0])]
+        table_name = self.params[2][0]
+        table = server[unquote_name(table_name)]
         if len(self.params[1])==1 and self.params[1][0]=='COUNT(*)':
 
             map_fun = "function (d) { if (d._id!=\"_meta\") {emit(null,null);}}"
-            cursor.save_one(len(table.query(map_fun)))
+            view = self.simple_select(server, table,
+                                      (table_name+'.'+'"id"',), self.params[3], params)
+            cursor.save_one(len(view))
         else:
             cursor.save_view(self.simple_select(server, table,
                                            self.params[1], self.params[3], params))
