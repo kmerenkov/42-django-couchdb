@@ -29,8 +29,8 @@ class DatabaseFeatures(BaseDatabaseFeatures):
 
 class DatabaseWrapper(BaseDatabaseWrapper):
     operators = {
-        'exact': '= %s',
-        'iexact': '= UPPER(%s)',
+        'exact': '== "%s"',
+        'iexact': '== UPPER(%s)',
         'contains': 'LIKE %s',
         'icontains': 'LIKE UPPER(%s)',
         'regex': '~ %s',
@@ -43,6 +43,7 @@ class DatabaseWrapper(BaseDatabaseWrapper):
         'endswith': 'LIKE %s',
         'istartswith': 'LIKE UPPER(%s)',
         'iendswith': 'LIKE UPPER(%s)',
+        'in': 'in %s',
     }
 
     """

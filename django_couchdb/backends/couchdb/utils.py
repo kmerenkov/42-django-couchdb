@@ -86,8 +86,24 @@ class SQL(object):
             obj[key] = view % val
         table[id] = obj
 
+
     def simple_select(self,server, table, columns, where, params):
+        def create_where_statement(s, params):
+            table_name = unquote_name(s[:s.find('.')])
+            field_name = unquote_name(s[s.find('.')+1:s.find(' ')])
+            if field_name == 'id':
+                field_name = '_id'
+            statement = s[s.find(' '):]
+
+            if 'in' in statement: # hack
+                params = '{'+','.join('%s: 1' % x for x in params) + '}'
+            return ('d.'+field_name + statement) % params
+
         map_fun = "function (d) { if (d._id!=\"_meta\") {"
+        if where:
+            st = create_where_statement(where, params)
+            map_fun += "if ("+st+") {"
+
         # just selecting, not where
         map_fun += "result = ["
         str_columns = ','.join(map(lambda x: "d._id" if unquote_name(x.split('.')[1]) == 'id' else
@@ -96,6 +112,9 @@ class SQL(object):
         map_fun += str_columns;
         map_fun += "] ;emit(d._id, result);"
         map_fun += "}}"
+        if where:
+            map_fun += '}'
+
         view = table.query(map_fun)
         return view
 
