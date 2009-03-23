@@ -85,12 +85,17 @@ class SQL(object):
     def execute_insert(self, server, params):
         # self.params --- (table name, columns, values)
         table = server[self.params[0]]
-        seq = Sequence(server, ("%s_seq"% (self.params[0], )))
-        id = str(seq.nextval())
-        obj = {'_id': id}
+        if not 'id' in self.params[1]:
+            seq = Sequence(server, ("%s_seq"% (self.params[0], )))
+            id = str(seq.nextval())
+            obj = {'_id': id}
+        else:
+            obj = {}
         for key, view, val in izip(self.params[1], self.params[2], params):
+            if key=='id':
+                key = '_id'
             obj[key] = view % val
-        table[id] = obj
+        table[obj['_id']] = obj
 
 
     def simple_select(self,server, table, columns, where, params, alias = None):

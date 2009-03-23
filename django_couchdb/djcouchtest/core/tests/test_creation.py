@@ -1,5 +1,8 @@
 from django.core.management import call_command
+from django.db.models import Q
 from nose.tools import assert_equal
+
+from djcouchtest.core.models import Boo, Foo
 
 
 class TestCreation:
@@ -21,3 +24,10 @@ class TestCreation:
         assert 'boo_id' in description, description
         assert_equal(description['REFERENCES'],[u'boo_id=core_boo', u'boo2_id=core_boo'])
 
+    def test_fixtures(self):
+        call_command('syncdb', interactive=False, verbosity=0)
+        Boo.objects.all().delete()
+        Foo.objects.all().delete()
+        call_command('loaddata', 'test_fixtures.json', verbosity=0)
+        assert_equal(Boo.objects.filter(slug="1").count(), 2)
+        assert_equal(Foo.objects.filter(Q(boo__title="1") & Q(boo2__title="2")).count(), 1)
