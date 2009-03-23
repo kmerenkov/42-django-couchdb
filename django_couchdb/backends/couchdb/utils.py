@@ -116,7 +116,10 @@ class SQL(object):
                 if right=='id':
                     right = '_id'
                 if left==table_name:
-                    processed_columns.append(left + '.' + right)
+                    if right=='_id':
+                        processed_columns.append('parseInt('+left + '.' + right+')')
+                    else:
+                        processed_columns.append(left + '.' + right)
             else:
                 processed_columns.append(x)
         str_columns = ','.join(processed_columns)
