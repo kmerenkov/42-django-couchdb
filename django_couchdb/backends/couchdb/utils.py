@@ -1,6 +1,6 @@
 from time import time
 from itertools import izip
-
+from nodes import Lookup
 import couchdb
 
 
@@ -113,8 +113,7 @@ class SQL(object):
         view = table.query(map_fun)
         return view
 
-    def execute_select(self, server, cursor, params):
-
+    def execute_simple_select(self, server, cursor, params):
         # self.params --- (distinct flag, table columns, from, where, extra where,
         #             group by, having, ordering, limits)
         table_name = self.params[2][0]
@@ -128,6 +127,39 @@ class SQL(object):
         else:
             cursor.save_view(self.simple_select(server, table,
                                            self.params[1], self.params[3], params))
+
+
+    def execute_select(self, server, cursor, params):
+        # self.params --- (distinct flag, table columns, from, where, extra where,
+        #             group by, having, ordering, limits)
+        if len(self.params[2]) == 1:
+            return self.execute_simple_select(server,cursor,params)
+        elif len(self.params[2]) == 2: # at first just try to make things simple
+            left, right = self.params[2][1].split('ON')
+            left = left.split()
+            right = right[2:-1].split()
+            if left[0] == 'INNER':
+                table_name = left[2]
+                table = server[unquote_name(table_name)]
+                view = self.simple_select(server, table,
+                                          (table_name+'.'+'"id"',),
+                                          self.params[3], params)
+                ids = (d.id for d in view)
+                # table_alias, name, db_type, lookup_type, value_annot, params
+                l = Lookup(None, unquote_name(right[0].split('.')[1]),
+                           None, 'in', None, ids)
+                table_name = right[0].split('.')[0]
+                table = server[unquote_name(table_name)]
+                if len(self.params[1])==1 and self.params[1][0]=='COUNT(*)':
+                    joined_view = self.simple_select(server, table,
+                                                     (table_name+'.'+'"id"',),
+                                                     l.as_sql(),params)
+                    cursor.save_one(len(joined_view))
+                else:
+                    joined_view = self.simple_select(server, table,
+                                                     self.params[1],
+                                                     l.as_sql(),params)
+                    cursor.save_view(joined_view)
 
     def execute_delete(self, server, params):
         # self.params ---(table_name, where)
@@ -195,6 +227,8 @@ class CursorWrapper(object):
 
         self.server = server
         self._username, self._password = username, password
+        self.saved_view = None
+        self.saved_one = None
 
     def execute(self, sql, params=()):
         if isinstance(sql, SQL):
