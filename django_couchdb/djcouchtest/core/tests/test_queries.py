@@ -44,6 +44,21 @@ class TestQueries:
         assert_equal(Boo.objects.filter(slug="1").filter(title="1").count(), 1)
         assert_equal(Boo.objects.filter(Q(title="1") | Q(title="2")).count(), 2)
 
-
+    def test_joins(self):
+        call_command('syncdb', interactive=False, verbosity=0)
+        Boo.objects.all().delete()
+        Foo.objects.all().delete()
+        b1 = Boo(title="1", slug="1")
+        b1.save()
+        b11 = Boo(title="11", slug="1")
+        b11.save()
+        b2 = Boo(title="2", slug="2")
+        b2.save()
+        f1 = Foo(boo=b1)
+        f1.save()
+        f2 = Foo(boo=b2)
+        f2.save()
+        assert_equal(Foo.objects.filter(boo__title="1").count(), 1)
+        assert_equal(Foo.objects.filter(boo__title="11").count(), 0)
 
 
