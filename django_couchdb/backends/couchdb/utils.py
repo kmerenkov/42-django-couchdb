@@ -107,13 +107,18 @@ class SQL(object):
         map_fun += "result = ["
         processed_columns = []
         for x in columns:
-            left, right = x.split('.')
-            left = unquote_name(left)
-            right = unquote_name(right)
-            if right=='id':
-                right = '_id'
-            if left==table_name:
-                processed_columns.append(left + '.' + right)
+            if 'AS' in x:
+                x = x[:x.find('AS')]
+            if '.' in x: # bad usage. Dot can occur in arithmetic operations!!!
+                left, right = x.split('.')
+                left = unquote_name(left)
+                right = unquote_name(right)
+                if right=='id':
+                    right = '_id'
+                if left==table_name:
+                    processed_columns.append(left + '.' + right)
+            else:
+                processed_columns.append(x)
         str_columns = ','.join(processed_columns)
         map_fun += str_columns;
         map_fun += "] ;emit("+table_name+"._id, result);"
@@ -233,7 +238,8 @@ class ConnectionWrapper(object):
         return self._cursor
 
     def rollback(self):
-        raise NotImplementedError
+        #~ raise NotImplementedError
+        pass
 
 class CursorWrapper(object):
     """
@@ -252,9 +258,16 @@ class CursorWrapper(object):
         if isinstance(sql, SQL):
             sql.execute_sql(self, params)
 
-    def save_view(self, view):
+    def save_view(self, view): # fetch here?
         self.saved_view = view
         self.saved_view_offset = 0
+
+    @property
+    def rowcount(self):
+        if self.saved_view:
+            return len(self.saved_view)
+        else:
+            return 0
 
     def save_one(self, one):
         self.saved_one = one
