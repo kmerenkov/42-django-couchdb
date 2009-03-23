@@ -109,7 +109,7 @@ class SQL(object):
         map_fun += "}}"
         if where:
             map_fun += '}'
-        print "MAP_FUN:", map_fun
+        #~ print "MAP_FUN:", map_fun
         view = table.query(map_fun)
         return view
 

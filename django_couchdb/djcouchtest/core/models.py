@@ -10,4 +10,4 @@ class Boo(models.Model):
 
 class Foo(models.Model):
     boo = models.ForeignKey(Boo)
-
+    boo2 = models.ForeignKey(Boo, related_name="foo2_set")

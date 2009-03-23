@@ -58,7 +58,14 @@ class TestQueries:
         f1.save()
         f2 = Foo(boo=b2)
         f2.save()
-        assert_equal(Foo.objects.filter(boo__title="1").count(), 1)
+        f3 = Foo(boo=b1,boo2=b2)
+        f3.save()
+        assert_equal(Foo.objects.filter(boo__title="1").count(), 2)
         assert_equal(Foo.objects.filter(boo__title="11").count(), 0)
+        assert_equal(Foo.objects.filter(Q(boo__title="1") | Q(boo__slug="2")).count(), 3)
+
+        assert_equal(Foo.objects.filter(Q(boo__title="1") & Q(boo2__title="2")).count(), 1)
+        assert_equal(Foo.objects.filter(Q(boo__title="1") & Q(boo2__title="11")).count(), 0)
+
 
 
