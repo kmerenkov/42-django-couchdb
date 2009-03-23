@@ -1,11 +1,17 @@
+def unquote_name(name):
+    if name.startswith('"') and name.endswith('"'):
+        return name[1:-1]
+    return name
+
 def process_name(name):
     if name =='id':
         return '_id'
     else:
         return name
 
-def operator_lookup(name, operator, params):
-    return "d."+process_name(name) + " %s " % (operator,) + "\"%s\"" % tuple(params)
+def operator_lookup(table_alias, name, operator, params):
+    return "(typeof "+table_alias+" == \"undefined\" || " + \
+                table_alias+ "."+process_name(name) + " %s " % (operator,) + "\"%s\")" % tuple(params)
 
 class Lookup(object):
     operators = {
@@ -26,7 +32,10 @@ class Lookup(object):
     }
 
     def __init__(self, table_alias, name, db_type, lookup_type, value_annot, params):
-        self.table_alias = table_alias
+        if table_alias is None:
+            self.table_alias = '_d'
+        else:
+            self.table_alias = unquote_name(table_alias)
         self.name = name
         self.db_type = db_type
         self.lookup_type = lookup_type
@@ -36,9 +45,10 @@ class Lookup(object):
         self.as_sql = getattr(self,'lookup_'+lookup_type, None)
         if self.as_sql is None:
             if lookup_type in self.operators:
-                self.as_sql = lambda : operator_lookup(self.name,
-                                                        self.operators[lookup_type],
-                                                        self.params)
+                self.as_sql = lambda : operator_lookup(self.table_alias,
+                                                       self.name,
+                                                       self.operators[lookup_type],
+                                                       self.params)
             else:
                 self.as_sql = self.dummy_lookup
 
@@ -48,7 +58,8 @@ class Lookup(object):
 
     def lookup_in(self):
         params = '{'+','.join('%s: 1' % x for x in self.params) + '}'
-        return "d." + process_name(self.name) + " in %s" % params
+        return "(typeof "+self.table_alias+" == \"undefined\" || " + \
+                self.table_alias+ "." + process_name(self.name) + " in %s)" % params
 
 
 def get_where_node(BaseNode):

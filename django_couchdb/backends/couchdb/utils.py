@@ -93,23 +93,34 @@ class SQL(object):
         table[id] = obj
 
 
-    def simple_select(self,server, table, columns, where, params):
-
-        map_fun = "function (d) { if (d._id!=\"_meta\") {"
+    def simple_select(self,server, table, columns, where, params, alias = None):
+        if alias:
+            table_name = alias
+        else:
+            table_name = table.name
+        map_fun = "function ("+table_name+") { var _d = " + table_name+ ";"
+        map_fun += "if ("+table_name+"._id!=\"_meta\") {"
         if where:
             map_fun += "if ("+process_where(where)+") {"
 
         # just selecting, not where
         map_fun += "result = ["
-        str_columns = ','.join(map(lambda x: "d._id" if unquote_name(x.split('.')[1]) == 'id' else
-                                "d."+ unquote_name(x.split('.')[1]),
-                           (x for x in columns)))
+        processed_columns = []
+        for x in columns:
+            left, right = x.split('.')
+            left = unquote_name(left)
+            right = unquote_name(right)
+            if right=='id':
+                right = '_id'
+            if left==table_name:
+                processed_columns.append(left + '.' + right)
+        str_columns = ','.join(processed_columns)
         map_fun += str_columns;
-        map_fun += "] ;emit(d._id, result);"
+        map_fun += "] ;emit("+table_name+"._id, result);"
         map_fun += "}}"
         if where:
             map_fun += '}'
-        #~ print "MAP_FUN:", map_fun
+        print "MAP_FUN:", map_fun
         view = table.query(map_fun)
         return view
 
@@ -119,8 +130,6 @@ class SQL(object):
         table_name = self.params[2][0]
         table = server[unquote_name(table_name)]
         if len(self.params[1])==1 and self.params[1][0]=='COUNT(*)':
-
-            map_fun = "function (d) { if (d._id!=\"_meta\") {emit(null,null);}}"
             view = self.simple_select(server, table,
                                       (table_name+'.'+'"id"',), self.params[3], params)
             cursor.save_one(len(view))
@@ -134,32 +143,41 @@ class SQL(object):
         #             group by, having, ordering, limits)
         if len(self.params[2]) == 1:
             return self.execute_simple_select(server,cursor,params)
-        elif len(self.params[2]) == 2: # at first just try to make things simple
-            left, right = self.params[2][1].split('ON')
-            left = left.split()
-            right = right[2:-1].split()
-            if left[0] == 'INNER':
-                table_name = left[2]
-                table = server[unquote_name(table_name)]
-                view = self.simple_select(server, table,
-                                          (table_name+'.'+'"id"',),
-                                          self.params[3], params)
-                ids = (d.id for d in view)
-                # table_alias, name, db_type, lookup_type, value_annot, params
-                l = Lookup(None, unquote_name(right[0].split('.')[1]),
-                           None, 'in', None, ids)
-                table_name = right[0].split('.')[0]
-                table = server[unquote_name(table_name)]
-                if len(self.params[1])==1 and self.params[1][0]=='COUNT(*)':
-                    joined_view = self.simple_select(server, table,
-                                                     (table_name+'.'+'"id"',),
-                                                     l.as_sql(),params)
-                    cursor.save_one(len(joined_view))
-                else:
-                    joined_view = self.simple_select(server, table,
-                                                     self.params[1],
-                                                     l.as_sql(),params)
-                    cursor.save_view(joined_view)
+        else:
+            leftmost_table_name = self.params[2][0]
+            lookups = []
+            for x in self.params[2][1:]:
+                left, right = x.split('ON')
+                left = left.split()
+                right = right[2:-1].split()
+                if left[0] == 'INNER':
+                    if len(left) == 4: # in case of alias
+                        table_name = left[2]
+                        alias = left[3]
+                    else:
+                        table_name = left[2]
+                        alias = unquote_name(left[2])
+                    table = server[unquote_name(table_name)]
+                    view = self.simple_select(server, table,
+                                              (table_name+'.'+'"id"',),
+                                              self.params[3], params, alias=alias)
+                    ids = (d.id for d in view)
+                    # table_alias, name, db_type, lookup_type, value_annot, params
+                    l = Lookup(leftmost_table_name, unquote_name(right[0].split('.')[1]),
+                               None, 'in', None, ids)
+                    lookups.append(l.as_sql())
+            lookup_str = ' AND '.join(lookups)
+            table = server[unquote_name(leftmost_table_name)]
+            if len(self.params[1])==1 and self.params[1][0]=='COUNT(*)':
+                joined_view = self.simple_select(server, table,
+                                                 (leftmost_table_name+'.'+'"id"',),
+                                                 lookup_str, params)
+                cursor.save_one(len(joined_view))
+            else:
+                joined_view = self.simple_select(server, table,
+                                                 self.params[1],
+                                                 lookup_str, params)
+                cursor.save_view(joined_view)
 
     def execute_delete(self, server, params):
         # self.params ---(table_name, where)
