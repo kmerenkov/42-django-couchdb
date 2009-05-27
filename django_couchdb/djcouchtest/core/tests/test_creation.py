@@ -3,9 +3,9 @@ from django.db.models import Q
 from nose.tools import assert_equal
 
 from djcouchtest.core.models import Boo, Foo
+from djcouchtest.core.tests.utils import CouchDBMock
 
-
-class TestCreation:
+class TestCreation(CouchDBMock):
     def test_syncdb(self):
         call_command('syncdb', interactive=False, verbosity=0)
         from django.db import connection

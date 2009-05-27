@@ -3,9 +3,10 @@ from django.db.models import Q
 from nose.tools import assert_equal
 
 from djcouchtest.core.models import Boo, Foo
+from djcouchtest.core.tests.utils import CouchDBMock
 
 
-class TestQueries:
+class TestQueries(CouchDBMock):
     def test_save_and_get(self):
         call_command('syncdb', interactive=False, verbosity=0)
         Boo.objects.all().delete()

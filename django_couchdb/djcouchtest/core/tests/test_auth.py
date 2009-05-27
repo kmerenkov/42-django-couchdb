@@ -2,11 +2,13 @@ from django.core.management import call_command
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate
 from django.conf import settings
-
 from nose.tools import assert_equal
 from couchdb import *
 
-class TestAuthBackend:
+
+from djcouchtest.core.tests.utils import CouchDBMock
+
+class TestAuthBackend(CouchDBMock):
     def test_syncdb(self):
         s = Server(settings.DATABASE_HOST)
         if 'auth_user' in s:
