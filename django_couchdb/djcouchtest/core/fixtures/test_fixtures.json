@@ -1,0 +1,34 @@
+[
+  {
+    "pk": 2, 
+    "model": "core.boo", 
+    "fields": {
+      "slug": "1", 
+      "title": "1"
+    }
+  }, 
+  {
+    "pk": 4, 
+    "model": "core.boo", 
+    "fields": {
+      "slug": "1", 
+      "title": "11"
+    }
+  }, 
+  {
+    "pk": 6, 
+    "model": "core.boo", 
+    "fields": {
+      "slug": "2", 
+      "title": "2"
+    }
+  }, 
+  {
+    "pk": 5, 
+    "model": "core.foo", 
+    "fields": {
+      "boo2": 6, 
+      "boo": 2
+    }
+  }
+]

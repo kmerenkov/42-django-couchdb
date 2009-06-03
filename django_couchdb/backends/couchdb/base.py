@@ -25,9 +25,9 @@ class DatabaseFeatures(BaseDatabaseFeatures):
     can_use_chunked_reads = False
     needs_datetime_string_cast = False
     update_can_self_select = False
+    uses_custom_query_class = True
 
 class DatabaseWrapper(BaseDatabaseWrapper):
-    #~ operators = {}
     """
     @summary: Database wrapper for Django CouchDB backend.
     """
@@ -53,3 +53,5 @@ class DatabaseWrapper(BaseDatabaseWrapper):
 
     def make_debug_cursor(self, cursor):
         return DebugCursorWrapper(cursor)
+
+
