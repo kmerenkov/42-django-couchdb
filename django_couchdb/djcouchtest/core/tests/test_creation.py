@@ -24,7 +24,8 @@ class TestCreation(CouchDBMock):
             cursor, 'core_foo')
         assert description, "Description for core_foo must not be None"
         assert 'boo_id' in description, description
-        assert_equal(description['REFERENCES'],[u'boo_id=core_boo', u'boo2_id=core_boo'])
+        assert_equal(description['REFERENCES'],
+                     [u'boo_id=core_boo', u'boo2_id=core_boo'])
 
     def test_fixtures(self):
         call_command('syncdb', interactive=False, verbosity=0)
@@ -32,4 +33,6 @@ class TestCreation(CouchDBMock):
         Foo.objects.all().delete()
         call_command('loaddata', 'test_fixtures.json', verbosity=0)
         assert_equal(Boo.objects.filter(slug="1").count(), 2)
-        assert_equal(Foo.objects.filter(Q(boo__title="1") & Q(boo2__title="2")).count(), 1)
+        assert_equal(
+            Foo.objects.filter(Q(boo__title="1") & Q(boo2__title="2")).count(),
+            1)
