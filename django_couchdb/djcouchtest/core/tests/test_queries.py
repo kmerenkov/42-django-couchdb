@@ -83,4 +83,17 @@ class TestQueries(CouchDBMock):
         theb2 = Boo2.objects.get(pk=b2.id)
         assert theb2.flag is False, theb2.flag
 
+        b1 = Boo(title="1", slug="1")
+        b1.save()
+        b2 = Boo(title="2", slug="2")
+        b2.save()
+        f1 = Foo(boo=b1)
+        f1.save()
+        f1.boo=b2
+        f1.save()
+        assert_equal(f1.boo, b2)
+        assert_equal(f1.boo.title, "2")
+
+
+
 
