@@ -2,7 +2,7 @@ from django.core.management import call_command
 from django.db.models import Q
 from nose.tools import assert_equal
 
-from djcouchtest.core.models import Boo, Foo
+from djcouchtest.core.models import *
 from djcouchtest.core.tests.utils import CouchDBMock
 
 
@@ -68,5 +68,10 @@ class TestQueries(CouchDBMock):
         assert_equal(Foo.objects.filter(Q(boo__title="1") & Q(boo2__title="2")).count(), 1)
         assert_equal(Foo.objects.filter(Q(boo__title="1") & Q(boo2__title="11")).count(), 0)
 
-
+    def test_booleans(self):
+        call_command('syncdb', interactive=False, verbosity=0)
+        b2 = Boo2.objects.create(flag=True)
+        b2.save()
+        theb2 = Boo2.objects.get(pk=b2.id)
+        assert theb2.flag is True, "It should be boolean"
 
