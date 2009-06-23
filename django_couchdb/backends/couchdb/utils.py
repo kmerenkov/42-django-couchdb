@@ -45,10 +45,19 @@ def unquote_name(name):
     return name
 
 WHERE_REPLACEMENTS = {'AND': '&&', 'OR': '||', 'NOT': '!'}
+
 def process_where(where):
     for key,val in WHERE_REPLACEMENTS.iteritems():
         where = where.replace(key, val)
     return where
+
+def process_views(meta, columns, views):
+    for column, view in izip(columns, views):
+        options = meta.get(column, [])
+        if 'BOOLEAN' in options:
+            yield '__RAW__'
+        else:
+            yield view
 
 class SQL(object):
     def __init__(self, command, params):
@@ -91,10 +100,15 @@ class SQL(object):
             obj = {'_id': id}
         else:
             obj = {}
-        for key, view, val in izip(self.params[1], self.params[2], params):
+
+        views = process_views(table['_meta'], self.params[1], self.params[2])
+        for key, view, val in izip(self.params[1], views, params):
             if key=='id':
                 key = '_id'
-            obj[key] = view % val
+            if view == '__RAW__':
+                obj[key] = val
+            else:
+                obj[key] = view % val
         table[obj['_id']] = obj
 
 
