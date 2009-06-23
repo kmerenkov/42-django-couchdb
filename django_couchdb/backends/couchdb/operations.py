@@ -21,10 +21,22 @@ class DatabaseOperations(BaseDatabaseOperations):
 
     def query_class(self, DefaultQueryClass):
         class CustomQuery(DefaultQueryClass):
+            def clone(self, klass=None, **kwargs):
+                if klass:
+                    if klass.__name__ == 'InsertQuery':
+                        klass = get_insert_query(klass)
+                    elif klass.__name__ == 'UpdateQuery':
+                        klass = get_update_query(klass) # update == insert
+                    elif klass.__name__ == 'DeleteQuery':
+                        klass = get_delete_query(klass)
+                return super(CustomQuery, self).clone(klass, **kwargs)
             def __new__(cls, *args, **kwargs):
                 if cls.__name__ == 'InsertQuery':
                     NewInsertQuery = get_insert_query(cls)
                     obj =  super(CustomQuery, NewInsertQuery).__new__(NewInsertQuery, *args, **kwargs)
+                elif cls.__name__ == 'UpdateQuery':
+                    NewUpdateQuery = get_update_query(cls) # update == insert
+                    obj =  super(CustomQuery, NewUpdateQuery).__new__(NewUpdateQuery, *args, **kwargs)
                 elif cls.__name__ == 'DeleteQuery':
                     NewDeleteQuery = get_delete_query(cls)
                     obj =  super(CustomQuery, NewDeleteQuery).__new__(NewDeleteQuery, *args, **kwargs)

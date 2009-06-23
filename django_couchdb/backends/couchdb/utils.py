@@ -48,7 +48,7 @@ WHERE_REPLACEMENTS = {'AND': '&&', 'OR': '||', 'NOT': '!'}
 
 def process_where(where):
     for key,val in WHERE_REPLACEMENTS.iteritems():
-        where = where.replace(key, val)
+        where = where.replace(key, val) # it is dangerous !!!
     return where
 
 def process_views(meta, columns, views):
@@ -111,6 +111,28 @@ class SQL(object):
                 obj[key] = view % val
         table[obj['_id']] = obj
 
+    def execute_update(self, server, params):
+        # self.params --- (table name, column-values, where)
+        table_name = self.params[0]
+        table = server[table_name]
+        view = self.simple_select(server, table, (table_name+'.'+'"id"',),
+                                  self.params[2], params)
+        columns, values, views = [], [], []
+        for col,val,v in self.params[1]:
+            columns.append(unquote_name(col))
+            values.append(val)
+            views.append(v)
+        views = process_views(table['_meta'], columns, views)
+        for d in view:
+            obj = table[d.id]
+            for key, view, val in izip(columns, views, values):
+                if key=='id':
+                    key = '_id'
+                if view == '__RAW__':
+                    obj[key] = val
+                else:
+                    obj[key] = view % val
+            table[obj['_id']] = obj
 
     def simple_select(self,server, table, columns, where, params, alias = None):
         if alias:
@@ -147,7 +169,7 @@ class SQL(object):
         map_fun += "}}"
         if where:
             map_fun += '}'
-        print "MAP_FUN:", map_fun
+        #~ print "MAP_FUN:", map_fun
         view = table.query(map_fun)
         return view
 
@@ -224,6 +246,8 @@ class SQL(object):
             return self.execute_add_foreign_key(server)
         elif self.command == 'insert':
             return self.execute_insert(server, params)
+        elif self.command == 'update':
+            return self.execute_update(server, params)
         elif self.command == 'select':
             return self.execute_select(server, cursor, params)
         elif self.command == 'delete':
@@ -315,8 +339,8 @@ class DebugCursorWrapper(CursorWrapper):
     def execute(self, sql, params=()):
         start = time()
         try:
-            print "SQL:", unicode(sql)
-            print "PARAMS:", params
+            #~ print "SQL:", unicode(sql)
+            #~ print "PARAMS:", params
             super(DebugCursorWrapper, self).execute(sql, params)
         finally:
             stop = time()

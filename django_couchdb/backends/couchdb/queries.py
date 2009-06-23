@@ -6,6 +6,13 @@ def get_insert_query(BaseQuery):
             return SQL('insert',(self.model._meta.db_table, self.columns, self.values)), self.params
     return InsertQuery
 
+def get_update_query(BaseQuery):
+    class UpdateQuery(BaseQuery):
+        def as_sql(self):
+            where, w_params = self.where.as_sql(qn=self.quote_name_unless_alias)
+            return SQL('update',(self.model._meta.db_table, self.values, where)), w_params
+    return UpdateQuery
+
 
 def get_delete_query(BaseQuery):
     class DeleteQuery(BaseQuery):
