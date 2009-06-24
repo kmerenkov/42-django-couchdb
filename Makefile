@@ -36,10 +36,10 @@ pylint:
 	pylint $(app) --max-public-methods=50 --method-rgx='[a-z_][a-z0-9_]{2,40}$$'
 
 run:
-	PYTHONPATH=$(PYTHON) $(app)/manage.py runserver
+	PYTHONPATH=$(PYTHON) $(app)/djcouchtest/manage.py runserver
    
 syncdb:
-	PYTHONPATH=$(PYTHON) $(app)/manage.py syncdb --noinput
+	PYTHONPATH=$(PYTHON) $(app)/djcouchtest/manage.py syncdb --noinput
    
 ### Local variables: ***
 ### compile-command:"make" ***
