@@ -17,6 +17,7 @@ class DatabaseCreation(BaseDatabaseCreation):
 
 
     def sql_create_model(self, model, style, seen_models=set()):
+        from django.db import models
         data, pending_references = {}, {}
 
         opts = model._meta
@@ -37,6 +38,9 @@ class DatabaseCreation(BaseDatabaseCreation):
                 options['PRIMARY KEY'] = True
             if field.unique:
                 options['UNIQUE'] = True
+            if isinstance(field, models.BooleanField) or \
+               isinstance(field, models.NullBooleanField):
+                options['BOOLEAN'] = True
 
             if field.rel:
                 ref_fake_sql, pending = \
