@@ -71,7 +71,29 @@ class TestQueries(CouchDBMock):
     def test_booleans(self):
         call_command('syncdb', interactive=False, verbosity=0)
         b2 = Boo2.objects.create(flag=True)
+        theb2 = Boo2.objects.get(pk=b2.id)
+        assert theb2.flag is True, theb2.flag
+
+    def test_update_query(self):
+        call_command('syncdb', interactive=False, verbosity=0)
+        b2 = Boo2.objects.create(flag=True)
+        assert b2.flag is True, b2.flag
+        b2.flag = False
         b2.save()
         theb2 = Boo2.objects.get(pk=b2.id)
-        assert theb2.flag is True, "It should be boolean"
+        assert theb2.flag is False, theb2.flag
+
+        b1 = Boo(title="1", slug="1")
+        b1.save()
+        b2 = Boo(title="2", slug="2")
+        b2.save()
+        f1 = Foo(boo=b1)
+        f1.save()
+        f1.boo=b2
+        f1.save()
+        assert_equal(f1.boo, b2)
+        assert_equal(f1.boo.title, "2")
+
+
+
 
