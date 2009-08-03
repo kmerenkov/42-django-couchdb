@@ -40,8 +40,10 @@ class DatabaseWrapper(BaseDatabaseWrapper):
         self.ops = DatabaseOperations()
         self.validation = BaseDatabaseValidation()
 
-    def _cursor(self, settings):
+    def _cursor(self, settings=None):
         if self.connection is None:
+            if settings is not None:
+                from django.conf import settings
             if not settings.DATABASE_HOST:
                 raise ImproperlyConfigured, \
                       'Please, fill out DATABASE_HOST in the settings module ' \
