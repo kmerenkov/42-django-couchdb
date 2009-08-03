@@ -28,7 +28,7 @@ setup(
     zip_safe = False,
 
     install_requires = [
-        'couchdb-python'
+        'CouchDB'
     ],
     
     test_suite='tests',
