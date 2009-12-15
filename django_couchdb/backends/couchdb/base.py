@@ -42,7 +42,7 @@ class DatabaseWrapper(BaseDatabaseWrapper):
 
     def _cursor(self, settings=None):
         if self.connection is None:
-            if settings is not None:
+            if settings is None: # FIXME not sure about it, whole thing looks wrong
                 from django.conf import settings
             if not settings.DATABASE_HOST:
                 raise ImproperlyConfigured, \
