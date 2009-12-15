@@ -66,7 +66,11 @@ def get_where_node(BaseNode):
     class WhereNode(BaseNode):
         def make_atom(self, child, qn):
             #~ table_alias, name, db_type, lookup_type, value_annot, params = child
-            lookup = Lookup(*child)
+            (table_alias, name, db_type) = child[0]
+            lookup_type = child[1]
+            value_annot = child[2]
+            params = child[3]
+            lookup = Lookup(table_alias, name, db_type, lookup_type, value_annot, params)
             return lookup.as_sql(), []
     return WhereNode
 
