@@ -11,6 +11,10 @@ __all__ = ('ConnectionWrapper', 'CursorWrapper', 'DatabaseError',
 DatabaseError = couchdb.ServerError
 IntegrityError = couchdb.ResourceConflict
 
+
+META_KEY = 'meta'
+
+
 class Sequence(object):
     def __init__(self, server, name):
         if not 'sequences' in server.__iter__():
@@ -68,7 +72,7 @@ class SQL(object):
         # self.params --- (model opts, field_params)
         opts = self.params[0]
         table = server.create(opts.db_table)
-        meta = {'_id': '_meta'}
+        meta = {'_id': META_KEY}
         if opts.unique_together:
             meta['UNIQUE'] = list(opts.unique_together)
         for field, field_params in self.params[1].iteritems():
@@ -77,19 +81,19 @@ class SQL(object):
                 if value:
                     params_list.append(param)
             meta[field] = params_list
-        table['_meta'] = meta
+        table[META_KEY] = meta
 
     def execute_add_foreign_key(self, server):
         # self.params - (r_table, r_col, table)
         table = server[self.params[0]]
-        meta = table['_meta']
+        meta = table[META_KEY]
         try:
             refs = meta['REFERENCES']
         except KeyError:
             refs = []
         refs.append('%s=%s' % (self.params[1], self.params[2]))
         meta['REFERENCES'] = refs
-        table['_meta'] = meta
+        table[META_KEY] = meta
 
     def execute_insert(self, server, params):
         # self.params --- (table name, columns, values)
@@ -101,7 +105,7 @@ class SQL(object):
         else:
             obj = {}
 
-        views = process_views(table['_meta'], self.params[1], self.params[2])
+        views = process_views(table[META_KEY], self.params[1], self.params[2])
         for key, view, val in izip(self.params[1], views, params):
             if key=='id':
                 key = '_id'
@@ -122,7 +126,7 @@ class SQL(object):
             columns.append(unquote_name(col))
             values.append(val)
             views.append(v)
-        views = process_views(table['_meta'], columns, views)
+        views = process_views(table[META_KEY], columns, views)
         for d in view:
             obj = table[d.id]
             for key, view, val in izip(columns, views, values):
@@ -140,7 +144,7 @@ class SQL(object):
         else:
             table_name = table.name
         map_fun = "function ("+table_name+") { var _d = " + table_name+ ";"
-        map_fun += "if ("+table_name+"._id!=\"_meta\") {"
+        map_fun += "if ("+table_name+"._id!=\""+META_KEY+"\") {"
         if where:
             map_fun += "if ("+process_where(where)+") {"
 
