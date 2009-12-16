@@ -1,6 +1,7 @@
 from time import time
 from itertools import izip
 from nodes import Lookup
+from model_meta import ModelMeta
 import couchdb
 
 
@@ -12,6 +13,7 @@ DatabaseError = couchdb.ServerError
 IntegrityError = couchdb.ResourceConflict
 
 
+# FIXME feel free to remove me :)
 META_KEY = 'meta'
 
 
@@ -71,8 +73,7 @@ class SQL(object):
     def execute_create(self, server):
         # self.params --- (model opts, field_params)
         opts = self.params[0]
-        table = server.create(opts.db_table)
-        meta = {'_id': META_KEY}
+        meta = {}
         if opts.unique_together:
             meta['UNIQUE'] = list(opts.unique_together)
         for field, field_params in self.params[1].iteritems():
@@ -81,19 +82,24 @@ class SQL(object):
                 if value:
                     params_list.append(param)
             meta[field] = params_list
-        table[META_KEY] = meta
+        model_meta = ModelMeta(server, opts.db_table)
+        model_meta.set_meta(meta)
+        # FIXME remove me
+        # Creating database to not to break selects/inserts/whatever
+        # temporary solution :)
+        server.create(opts.db_table)
 
     def execute_add_foreign_key(self, server):
         # self.params - (r_table, r_col, table)
-        table = server[self.params[0]]
-        meta = table[META_KEY]
+        model_meta = ModelMeta(server, self.params[0])
+        meta = model_meta.get_meta()
         try:
             refs = meta['REFERENCES']
         except KeyError:
             refs = []
         refs.append('%s=%s' % (self.params[1], self.params[2]))
         meta['REFERENCES'] = refs
-        table[META_KEY] = meta
+        model_meta.set_meta(meta)
 
     def execute_insert(self, server, params):
         # self.params --- (table name, columns, values)
@@ -105,7 +111,8 @@ class SQL(object):
         else:
             obj = {}
 
-        views = process_views(table[META_KEY], self.params[1], self.params[2])
+        model_meta = ModelMeta(server, self.params[0])
+        views = process_views(model_meta.get_meta(), self.params[1], self.params[2])
         for key, view, val in izip(self.params[1], views, params):
             if key=='id':
                 key = '_id'
@@ -126,7 +133,8 @@ class SQL(object):
             columns.append(unquote_name(col))
             values.append(val)
             views.append(v)
-        views = process_views(table[META_KEY], columns, views)
+        model_meta = ModelMeta(server, self.params[0])
+        views = process_views(model_meta.get_meta(), columns, views)
         for d in view:
             obj = table[d.id]
             for key, view, val in izip(columns, views, values):
@@ -138,13 +146,13 @@ class SQL(object):
                     obj[key] = view % val
             table[obj['_id']] = obj
 
-    def simple_select(self,server, table, columns, where, params, alias = None):
+    def simple_select(self, _server, table, columns, where, _params, alias = None):
         if alias:
             table_name = alias
         else:
             table_name = table.name
         map_fun = "function ("+table_name+") { var _d = " + table_name+ ";"
-        map_fun += "if ("+table_name+"._id!=\""+META_KEY+"\") {"
+        map_fun += "if ("+table_name+"._id!=\""+META_KEY+"\") {" # FIXME no need in META_KEY here
         if where:
             map_fun += "if ("+process_where(where)+") {"
 
@@ -173,7 +181,7 @@ class SQL(object):
         map_fun += "}}"
         if where:
             map_fun += '}'
-        #~ print "MAP_FUN:", map_fun
+        # print "MAP_FUN:", map_fun
         view = table.query(map_fun)
         return view
 
