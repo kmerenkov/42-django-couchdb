@@ -30,12 +30,20 @@ function (record) {
         result = self._db.query(ModelMeta.GET_META_VIEW % (self.model_name))
         rows = result.rows
         if rows:
-            return rows[0]
-        return []
+            return rows[0].value
+        return {}
+
+    def update_meta(self, meta):
+        self._init_db()
+        old_meta = self.get_meta()
+        meta_ = copy(meta)
+        meta_.update(old_meta)
+        self._db[meta_['_id']] = meta_
 
     def set_meta(self, meta):
         self._init_db()
         meta_ = copy(meta)
+        meta_['_id'] = 'meta:%s' % self.model_name
         meta_['Type'] = 'model_meta'
         meta_['model'] = self.model_name
         self._db.create(meta_)

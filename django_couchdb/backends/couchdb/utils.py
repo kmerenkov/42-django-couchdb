@@ -117,7 +117,7 @@ class SQL(object):
             refs = []
         refs.append('%s=%s' % (self.params[1], self.params[2]))
         meta['REFERENCES'] = refs
-        model_meta.set_meta(meta)
+        model_meta.update_meta(meta)
 
     def execute_insert(self, server, params):
         # self.params --- (table name, columns, values)
