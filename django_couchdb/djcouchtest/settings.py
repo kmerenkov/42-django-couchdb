@@ -17,6 +17,16 @@ DATABASE_HOST = 'http://localhost:5984/'   # Set to empty string for localhost. 
 DATABASE_PORT = '5984'             # Set to empty string for default. Not used with sqlite3.
 
 
+import fake_models
+FAKE_MODELS = {'auth_group': fake_models.FakeAuthGroup(),
+               'django_admin_log': fake_models.FakeAdminLog(),
+               'auth_permission': fake_models.FakeAuthPermission(),
+               'auth_message': fake_models.FakeAuthMessage(),
+               'django_site': fake_models.FakeSite(),
+               'django_session': fake_models.FakeSession(),
+               }
+
+
 # Local time zone for this installation. Choices can be found here:
 # http://en.wikipedia.org/wiki/List_of_tz_zones_by_name
 # although not all choices may be available on all operating systems.

@@ -3,6 +3,7 @@ from itertools import izip
 from nodes import Lookup
 from model_meta import ModelMeta
 import couchdb
+from django.conf import settings
 
 
 __all__ = ('ConnectionWrapper', 'CursorWrapper', 'DatabaseError',
@@ -15,6 +16,9 @@ IntegrityError = couchdb.ResourceConflict
 
 # FIXME feel free to remove me :)
 META_KEY = 'meta'
+
+
+FAKE_MODELS = settings.FAKE_MODELS
 
 
 class Sequence(object):
@@ -50,6 +54,12 @@ def unquote_name(name):
         return name[1:-1]
     return name
 
+def is_fake(name):
+    if unquote_name(name) in FAKE_MODELS:
+        return True
+    return False
+
+
 WHERE_REPLACEMENTS = {'AND': '&&', 'OR': '||', 'NOT': '!'}
 
 def process_where(where):
@@ -73,6 +83,9 @@ class SQL(object):
     def execute_create(self, server):
         # self.params --- (model opts, field_params)
         opts = self.params[0]
+        if is_fake(opts.db_table):
+            print "%s is fake, skipping create" % opts.db_table
+            return
         meta = {}
         if opts.unique_together:
             meta['UNIQUE'] = list(opts.unique_together)
@@ -91,6 +104,9 @@ class SQL(object):
 
     def execute_add_foreign_key(self, server):
         # self.params - (r_table, r_col, table)
+        if is_fake(self.params[0]):
+            print "%s is fake, skipping foreign key" % self.params[0]
+            return
         model_meta = ModelMeta(server, self.params[0])
         meta = model_meta.get_meta()
         try:
@@ -103,6 +119,9 @@ class SQL(object):
 
     def execute_insert(self, server, params):
         # self.params --- (table name, columns, values)
+        if is_fake(self.params[0]):
+            print "%s is fake, skipping insert" % self.params[0]
+            return
         table = server[self.params[0]]
         if not 'id' in self.params[1]:
             seq = Sequence(server, ("%s_seq"% (self.params[0], )))
@@ -125,6 +144,9 @@ class SQL(object):
     def execute_update(self, server, params):
         # self.params --- (table name, column-values, where)
         table_name = self.params[0]
+        if is_fake(table_name):
+            print "%s is fake, skipping update" % table_name
+            return
         table = server[table_name]
         view = self.simple_select(server, table, (table_name+'.'+'"id"',),
                                   self.params[2], params)
@@ -151,6 +173,9 @@ class SQL(object):
             table_name = alias
         else:
             table_name = table.name
+        if is_fake(table_name):
+            print "%s is fake, returning custom data" % table_name
+            return FAKE_MODELS[table_name].get()
         map_fun = "function ("+table_name+") { var _d = " + table_name+ ";"
         map_fun += "if ("+table_name+"._id!=\""+META_KEY+"\") {" # FIXME no need in META_KEY here
         if where:
@@ -202,6 +227,17 @@ class SQL(object):
     def execute_select(self, server, cursor, params):
         # self.params --- (distinct flag, table columns, from, where, extra where,
         #             group by, having, ordering, limits)
+        if is_fake(self.params[2][0]):
+            print "%s is fake, returning custom data" % self.params[2][0]
+            table_name = unquote_name(self.params[2][0])
+            custom_data = FAKE_MODELS[table_name].get()
+            if len(self.params[1]) == 1 and self.params[1][0] == 'COUNT(*)':
+                cursor.save_one(len(custom_data))
+            else:
+                cursor.save_view(custom_data)
+            return
+        else:
+            print "ALARM %s" % self.params[2][0]
         if len(self.params[2]) == 1:
             return self.execute_simple_select(server,cursor,params)
         else:
@@ -243,6 +279,9 @@ class SQL(object):
     def execute_delete(self, server, params):
         # self.params ---(table_name, where)
         table_name = self.params[0]
+        if is_fake(table_name):
+            print "%s is fake, skipping delete" % table_name
+            return
         where = self.params[1]
         table = server[unquote_name(table_name)]
         view = self.simple_select(server, table, (table_name+'.'+'"id"',),
@@ -336,7 +375,10 @@ class CursorWrapper(object):
     def fetchmany(self, count):
         ret = list(self.saved_view)[self.saved_view_offset:self.saved_view_offset+count]
         self.saved_view_offset += count
-        return map(lambda x:x.value,ret)
+        if type(self.saved_view) is list:
+            return ret
+        else:
+            return map(lambda x:x.value,ret)
 
 class DebugCursorWrapper(CursorWrapper):
     """
