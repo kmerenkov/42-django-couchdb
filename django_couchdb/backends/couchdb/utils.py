@@ -196,11 +196,11 @@ class SQL(object):
                 left, right = x.split('.')
                 left = unquote_name(left)
                 right = unquote_name(right)
-                if right=='id':
+                if right == 'id':
                     right = '_id'
-                if left==table_name:
-                    if right=='_id':
-                        processed_columns.append('parseInt('+left + '.' + right+')')
+                if left == table_name:
+                    if right == '_id':
+                        processed_columns.append('parseInt('+left + '.' + right+'.split(":")[1])')
                     else:
                         processed_columns.append(left + '.' + right)
             else:
@@ -220,13 +220,11 @@ class SQL(object):
         #             group by, having, ordering, limits)
         table_name = self.params[2][0]
         table = server[unquote_name(table_name)]
-        if len(self.params[1])==1 and self.params[1][0]=='COUNT(*)':
-            view = self.simple_select(server, table,
-                                      (table_name+'.'+'"id"',), self.params[3], params)
+        if len(self.params[1]) == 1 and self.params[1][0] == 'COUNT(*)':
+            view = self.simple_select(server, table, (table_name+'.'+'"id"',), self.params[3], params)
             cursor.save_one(len(view))
         else:
-            cursor.save_view(self.simple_select(server, table,
-                                           self.params[1], self.params[3], params))
+            cursor.save_view(self.simple_select(server, table, self.params[1], self.params[3], params))
 
 
     def execute_select(self, server, cursor, params):
@@ -244,7 +242,7 @@ class SQL(object):
         else:
             print "ALARM %s" % self.params[2][0]
         if len(self.params[2]) == 1:
-            return self.execute_simple_select(server,cursor,params)
+            return self.execute_simple_select(server, cursor, params)
         else:
             leftmost_table_name = self.params[2][0]
             lookups = []
@@ -383,7 +381,7 @@ class CursorWrapper(object):
         if type(self.saved_view) is list:
             return ret
         else:
-            return map(lambda x:x.value,ret)
+            return map(lambda x:x.value, ret)
 
 class DebugCursorWrapper(CursorWrapper):
     """
