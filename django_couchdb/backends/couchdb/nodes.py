@@ -45,6 +45,9 @@ class Lookup(object):
         self.as_sql = getattr(self,'lookup_'+lookup_type, None)
         if self.as_sql is None:
             if lookup_type in self.operators:
+                if self.name == 'id':
+                    # NOTE our id (_id in fact) have format model_name:id, enforce it here :)
+                    self.params = [ "%s:%s" % (self.table_alias, p) for p in self.params ]
                 self.as_sql = lambda : operator_lookup(self.table_alias,
                                                        self.name,
                                                        self.operators[lookup_type],

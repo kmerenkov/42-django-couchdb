@@ -10,8 +10,8 @@ __all__ = ('ConnectionWrapper', 'CursorWrapper', 'DatabaseError',
            'DebugCursorWrapper', 'IntegrityError', 'InternalError',
            'SQL', 'Sequence')
 
-DatabaseError = couchdb.ServerError
-IntegrityError = couchdb.ResourceConflict
+DatabaseError = couchdb.client.ServerError
+IntegrityError = couchdb.client.ResourceConflict
 
 
 # FIXME feel free to remove me :)
@@ -63,7 +63,7 @@ def is_fake(name):
 WHERE_REPLACEMENTS = {'AND': '&&', 'OR': '||', 'NOT': '!'}
 
 def process_where(where):
-    for key,val in WHERE_REPLACEMENTS.iteritems():
+    for key, val in WHERE_REPLACEMENTS.iteritems():
         where = where.replace(key, val) # it is dangerous !!!
     return where
 
@@ -119,22 +119,24 @@ class SQL(object):
 
     def execute_insert(self, server, params):
         # self.params --- (table name, columns, values)
-        if is_fake(self.params[0]):
+        table_name = self.params[0]
+        if is_fake(table_name):
             print "%s is fake, skipping insert" % self.params[0]
             return
-        table = server[self.params[0]]
+        table = server[table_name]
         if not 'id' in self.params[1]:
-            seq = Sequence(server, ("%s_seq"% (self.params[0], )))
+            seq = Sequence(server, ("%s_seq"% (table_name, )))
             id = str(seq.nextval())
-            obj = {'_id': id}
+            obj = {'_id': '%s:%s' % (table_name, id)}
         else:
             obj = {}
 
         model_meta = ModelMeta(server, self.params[0])
         views = process_views(model_meta.get_meta(), self.params[1], self.params[2])
         for key, view, val in izip(self.params[1], views, params):
-            if key=='id':
+            if key == 'id':
                 key = '_id'
+                val = "%s:%s" % (table_name, val)
             if view == '__RAW__':
                 obj[key] = val
             else:
@@ -162,6 +164,7 @@ class SQL(object):
             for key, view, val in izip(columns, views, values):
                 if key=='id':
                     key = '_id'
+                    val = "%s:%s" % (table_name, val)
                 if view == '__RAW__':
                     obj[key] = val
                 else:

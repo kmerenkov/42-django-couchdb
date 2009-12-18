@@ -18,6 +18,7 @@ from introspection import *
 from operations import *
 from utils import *
 
+
 class DatabaseFeatures(BaseDatabaseFeatures):
     """
     @summary: Database features of Django CouchDB backend.
