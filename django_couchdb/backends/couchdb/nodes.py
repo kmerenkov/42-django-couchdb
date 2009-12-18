@@ -61,8 +61,12 @@ class Lookup(object):
 
     def lookup_in(self):
         params = '{'+','.join('%s: 1' % x for x in self.params) + '}'
+        if self.name == 'id':
+            var = '%s.%s.split(":")[1]' % (self.table_alias, process_name(self.name))
+        else:
+            var = '%s.%s' % (self.table_alias, process_name(self.name))
         return "(typeof "+self.table_alias+" == \"undefined\" || " + \
-                self.table_alias+ "." + process_name(self.name) + " in %s)" % params
+                var + " in %s)" % params
 
 
 def get_where_node(BaseNode):
