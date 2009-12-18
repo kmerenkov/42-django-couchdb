@@ -4,7 +4,7 @@ def unquote_name(name):
     return name
 
 def process_name(name):
-    if name =='id':
+    if name == 'id':
         return '_id'
     else:
         return name
@@ -48,10 +48,10 @@ class Lookup(object):
                 if self.name == 'id':
                     # NOTE our id (_id in fact) have format model_name:id, enforce it here :)
                     self.params = [ "%s:%s" % (self.table_alias, p) for p in self.params ]
-                self.as_sql = lambda : operator_lookup(self.table_alias,
-                                                       self.name,
-                                                       self.operators[lookup_type],
-                                                       self.params)
+                self.as_sql = lambda: operator_lookup(self.table_alias,
+                                                      self.name,
+                                                      self.operators[lookup_type],
+                                                      self.params)
             else:
                 self.as_sql = self.dummy_lookup
 

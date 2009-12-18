@@ -23,18 +23,20 @@ FAKE_MODELS = settings.FAKE_MODELS
 
 class Sequence(object):
     def __init__(self, server, name):
-        if not 'sequences' in server.__iter__():
-            table = server.create('sequences')
+        if not settings.DATABASE_NAME in server:
+            table = server.create(settings.DATABASE_NAME)
         else:
-            table = server['sequences']
+            table = server[settings.DATABASE_NAME]
 
+        table_name = "sequence:%s" % name
         try:
-            seq = table[name]
+            seq = table[table_name]
         except couchdb.ResourceNotFound:
             seq = {'nextval': 1}
         self._nextval = seq['nextval']
-        seq['nextval']=seq['nextval'] + 1
-        table[name] = seq
+        seq['nextval'] = seq['nextval'] + 1
+        seq['Type'] = 'model_sequence'
+        table[table_name] = seq
 
     def nextval(self): # doesn't increment
         return self._nextval
@@ -125,7 +127,7 @@ class SQL(object):
             return
         table = server[table_name]
         if not 'id' in self.params[1]:
-            seq = Sequence(server, ("%s_seq"% (table_name, )))
+            seq = Sequence(server, table_name)
             id = str(seq.nextval())
             obj = {'_id': '%s:%s' % (table_name, id)}
         else:

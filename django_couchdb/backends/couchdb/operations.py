@@ -16,7 +16,7 @@ class DatabaseOperations(BaseDatabaseOperations):
         return '"%s"' % name
 
     def last_insert_id(self, cursor, table_name, pk_name):
-        s = Sequence(cursor.server, '%s_seq' % (table_name, ))
+        s = Sequence(cursor.server, table_name)
         return s.currval()
 
     def query_class(self, DefaultQueryClass):
